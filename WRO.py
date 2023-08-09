@@ -1,8 +1,8 @@
-import cv2
-import numpy as np
 import RPi.GPIO as GPIO
 import time
-import YB_Pcb_Car   
+import YB_Pcb_Car  
+import cv2
+import numpy as np  
 
 car = YB_Pcb_Car.YB_Pcb_Car()
 car.Ctrl_Servo(1,0)
@@ -10,21 +10,17 @@ time.sleep(1)
 car.Ctrl_Servo(2,90)
 time.sleep(1)
 
-#Set the GPIO port to BIARD encoding mode
+
 GPIO.setmode(GPIO.BOARD)
 
-#Ignore the warning message
 GPIO.setwarnings(False)
 
-
-AvoidSensorLeft = 21    
-AvoidSensorRight = 19    
+AvoidSensorLeft = 21     
+AvoidSensorRight = 19   
 Avoid_ON = 22  
-
 
 EchoPin = 18
 TrigPin = 16
-
 
 GPIO.setup(AvoidSensorLeft,GPIO.IN)
 GPIO.setup(AvoidSensorRight,GPIO.IN)
@@ -32,7 +28,6 @@ GPIO.setup(Avoid_ON,GPIO.OUT)
 GPIO.setup(EchoPin,GPIO.IN)
 GPIO.setup(TrigPin,GPIO.OUT)
 GPIO.output(Avoid_ON,GPIO.HIGH)
-
 def Distance():
     GPIO.output(TrigPin,GPIO.LOW)
     time.sleep(0.000002)
@@ -53,7 +48,6 @@ def Distance():
             return -1
 
     t2 = time.time()
- 
     return ((t2 - t1)* 340 / 2) * 100
 
 def Distance_test():
@@ -67,128 +61,109 @@ def Distance_test():
                 distance = Distance()
             ultrasonic.append(distance)
             num = num + 1
-
-    distance = (ultrasonic[1]+ultrasonic[2]+ultrasonic[3])/3
+  
+    distance = (ultrasonic[1] + ultrasonic[2] + ultrasonic[3])/3
     return distance
 def avoid():
     distance = Distance_test()
-    LeftSensorValue  = GPIO.input(AvoidSensorLeft)
-    RightSensorValue = GPIO.input(AvoidSensorRight)
-    if distance < 15 :
-        car.Car_Stop()
-        time.sleep(1)
-        car.Car_Back(90,90)
+    LeftSensorValue  = GPIO.input(AvoidSensorLeft);
+    RightSensorValue = GPIO.input(AvoidSensorRight);
+    if distance < 15 and LeftSensorValue == False and RightSensorValue == False :
+        car.Car_Stop() 
         time.sleep(0.1)
-
-        if distance < 15 and LeftSensorValue == False and RightSensorValue == False :
-            car.Car_Stop() 
-            time.sleep(0.1)
-            car.Car_Left(0,100) 
-            time.sleep(1)
-        elif distance < 15 and LeftSensorValue == True and RightSensorValue == False :
+        car.Car_Spin_Right(100,100) 
+        time.sleep(1)
+    elif distance < 15 and LeftSensorValue == True and RightSensorValue == False :
+        car.Car_Stop()
+        time.sleep(0.1)
+        car.Car_Spin_Left(80,80) 
+        time.sleep(1)
+        if LeftSensorValue == False and RightSensorValue == True :
             car.Car_Stop()
             time.sleep(0.1)
-            car.Car_Right(80,0) 
-            time.sleep(1)
-            if LeftSensorValue == False and RightSensorValue == True :
-                car.Car_Stop()
-                time.sleep(0.1)
-                car.Car_Left(0,90) 
-                time.sleep(2)
-        elif distance < 15 and LeftSensorValue == False and RightSensorValue == True :
-            car.Car_Stop() 
+            car.Car_Spin_Right(90,90) 
+            time.sleep(2)
+    elif distance < 15 and LeftSensorValue == False and RightSensorValue == True :
+        car.Car_Stop() 
+        time.sleep(0.1)
+        car.Car_Spin_Right(80,80)
+        time.sleep(1)
+        if LeftSensorValue == True and RightSensorValue == False  :
+            car.Car_Stop()
             time.sleep(0.1)
-            car.Car_Left(0,80)
-            time.sleep(1)
-            if LeftSensorValue == True and RightSensorValue == False  :
-                car.Car_Stop()
-                time.sleep(0.1)
-                car.Car_Right(90,0) 
-                time.sleep(2)
-        elif distance < 15 and LeftSensorValue == True and RightSensorValue == True :
-            car.Car_Stop() 
-            time.sleep(0.1)
-            car.Car_Right(80,0) 
-            time.sleep(0.5)
- 
-
+            car.Car_Spin_Left(90,90) 
+            time.sleep(2)
+    elif distance < 15 and LeftSensorValue == True and RightSensorValue == True :
+        car.Car_Stop() 
+        time.sleep(0.1)
+        car.Car_Spin_Right(80,80) 
+        time.sleep(0.5)
+    elif distance >= 15 and LeftSensorValue == False and RightSensorValue == False :
+        car.Car_Stop() 
+        time.sleep(0.1)
+        car.Car_Spin_Right(90,90) 
+        time.sleep(1)
+    elif distance >= 15 and LeftSensorValue == False and RightSensorValue == True :
+        car.Car_Stop() 
+        time.sleep(0.1)
+        car.Car_Spin_Right(80,80) 
+        time.sleep(0.5)
+    elif distance >= 15 and LeftSensorValue == True and RightSensorValue == False :
+        car.Car_Stop() 
+        time.sleep(0.1)
+        car.Car_Spin_Left(80,80) 
+        time.sleep(0.5)
     else:
-        car.Car_Run(100,100)
+        car.Car_Run(100,100) 
+
+# stop car after 3 cycle 
 
 
+def stop_car():
+    lower_blue = np.array([100, 50, 50])
+    upper_blue = np.array([130, 255, 255])
 
-def colored_cube():
-# for color 
+    cap = cv2.VideoCapture(0)
 
-    lower_green = np.array([40, 40, 40])
-    upper_green = np.array([80, 255, 255])
-
-    lower_red1 = np.array([0, 100, 100])
-    upper_red1 = np.array([10, 255, 255])
-    lower_red2 = np.array([160, 100, 100])
-    upper_red2 = np.array([180, 255, 255])
-
+    blue_counter = 0
 
     while True:
-        cap = cv2.VideoCapture(0)
-
         ret, frame = cap.read()
+
+        if not ret:
+            break
 
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        mask_green = cv2.inRange(hsv_frame, lower_green, upper_green)
-        mask_red1 = cv2.inRange(hsv_frame, lower_red1, upper_red1)
-        mask_red2 = cv2.inRange(hsv_frame, lower_red2, upper_red2)
+        mask_blue = cv2.inRange(hsv_frame, lower_blue, upper_blue)
 
-        mask_red = mask_red1 + mask_red2
-        mask_combined = mask_green + mask_red
+        contours, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Calculate the percentage of green and red pixels in the frame
-        total_pixels = frame.shape[0] * frame.shape[1]
-        green_pixels = cv2.countNonZero(mask_green)
-        red_pixels = cv2.countNonZero(mask_red)
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > 100:  
+                cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)  
 
-        green_percentage = (green_pixels / total_pixels) * 100
-        red_percentage = (red_pixels / total_pixels) * 100
+            
+                blue_counter += 1
+                print("Blue Line Counter:", blue_counter)
 
-    
+                if blue_counter >= 12:
+                    car.Car_stop()
 
-        cv2.imshow("Original", frame)
-        cv2.imshow("Green Mask", mask_green)
-        cv2.imshow("Red Mask", mask_red)
-        cv2.imshow("Combined Mask", mask_combined)
-
-
-
-
-        if green_percentage>1.0:
-            car.Car_Stop()
-            time.sleep(0.5)
-            car.Car_Left(80,80) 
-            time.sleep(1)
-            car.Car_Run(50,50)
-
-
-        elif red_percentage>1.0:
-            car.Car_Stop()
-            time.sleep(0.5)
-            car.Car_Right(80,80) 
-            time.sleep(1)
-            car.Car_Run(50,50)
-
+        cv2.imshow("Blue Line Detection", frame)
+        
+        if cv2.waitKey(1) & 0xFF == 27:  
 
 
         cap.release()
         cv2.destroyAllWindows()
 
 
-    
-
-
 try:
     while True:
         avoid()
-        colored_cube()
+        stop_car()
 except KeyboardInterrupt:
     pass
 car.Car_Stop() 
