@@ -1,0 +1,65 @@
+import RPi.GPIO as GPIO
+import time
+
+# Define the GPIO pins for S0, S1, S2, S3, and OUT
+S0 = 17
+S1 = 18
+S2 = 27
+S3 = 22
+OUT = 23
+
+# Set up GPIO mode and configure pins
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(S0, GPIO.OUT)
+GPIO.setup(S1, GPIO.OUT)
+GPIO.setup(S2, GPIO.OUT)
+GPIO.setup(S3, GPIO.OUT)
+GPIO.setup(OUT, GPIO.IN)
+
+# Configure scaling (adjust as needed)
+GPIO.output(S0, GPIO.LOW)
+GPIO.output(S1, GPIO.HIGH)
+
+blue_count = 0
+
+def read_color():
+    # Set S2 and S3 to select the color sensitivity (adjust as needed)
+    GPIO.output(S2, GPIO.LOW)
+    GPIO.output(S3, GPIO.LOW)
+    
+    # Wait for stabilization (adjust as needed)
+    time.sleep(0.1)
+    
+    # Read the frequency
+    frequency = 0
+    for _ in range(5):  # Read 5 times and average
+        frequency += GPIO.input(OUT)
+        time.sleep(0.1)
+    frequency /= 5.0
+    
+    # Determine the color based on the frequency (calibration may be required)
+    if 22 < frequency < 30:  # Adjust these values for your specific setup
+        return "Red"
+    elif 31 < frequency < 40:
+        return "Green"
+    elif 41 < frequency < 50:
+        return "Blue"
+    else:
+        return "Unknown"
+
+try:
+    while True:
+        color = read_color()
+        if color == "Blue":
+            blue_count += 1
+            print("Blue detected! Count:", blue_count)
+            if blue_count==12:
+                break
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    pass
+
+# Cleanup GPIO
+GPIO.cleanup()
+
