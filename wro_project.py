@@ -1,3 +1,4 @@
+
 import sys
 import time
 import RPi.GPIO as GPIO
@@ -6,8 +7,6 @@ import numpy as np
 from time import sleep
 
 # control car movement 
-# ################################# 
-
 # GPIO Pins for controlling the car
 motor_pin1 = 26  
 motor_pin2 = 20  
@@ -19,7 +18,7 @@ GPIO.setup(motor_pin1, GPIO.OUT)
 GPIO.setup(motor_pin2, GPIO.OUT)
 GPIO.setup(servo_pin, GPIO.OUT)
 
-
+# forword movement control by Dc motor
 # Create a function to control the car's movement
 def move_forward():
     GPIO.output(motor_pin1, GPIO.HIGH)
@@ -29,10 +28,9 @@ def stop():
     GPIO.output(motor_pin1, GPIO.LOW)
     GPIO.output(motor_pin2, GPIO.LOW)
 
-#Right and Left control 
-# ################################# 
-
+# Right and Left movement control by servo motor
 # Set the duty cycle for left and right positions
+
 left_position = 2.5  # Adjust this value for your servo
 right_position = 12.5  # Adjust this value for your servo
  # Set the PWM frequency (Hz)
@@ -57,120 +55,6 @@ def turn_left():
     time.sleep(1)  # Wait for 1 second
     pwm.stop()
     GPIO.cleanup()
-
-
-# camera code to avoid colored cube 
-# ################################# 
-# Create a VideoCapture object for the Pi Camera
-cap = cv2.VideoCapture(0)
-
-while True:
-    ret, frame = cap.read()
-
-    if not ret:
-        break
-
-    # Convert the frame to HSV color space
-    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    # Define the range of green color in HSV
-    lower_green = np.array([40, 40, 40])
-    upper_green = np.array([80, 255, 255])
-
-    # Define the range of red color in HSV
-    lower_red = np.array([0, 100, 100])
-    upper_red = np.array([10, 255, 255])
-
-    # Threshold the frame to get only green and red colors
-    green_mask = cv2.inRange(hsv_frame, lower_green, upper_green)
-    red_mask = cv2.inRange(hsv_frame, lower_red, upper_red)
-
-    # Find contours in the masks
-    green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Check if there are green and red objects
-    if len(green_contours) > 0:
-        turn_left()
-    elif len(red_contours) > 0:
-        turn_rigth
-    else:
-        # Continue moving forward if neither green nor red is detected
-        move_forward()
-
-    # Display the frame
-    cv2.imshow("Car Camera", frame)
-
-    # Break the loop if 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Release the VideoCapture and GPIO
-cap.release()
-cv2.destroyAllWindows()
-GPIO.cleanup()
-################################################################
-# color sensor
-# Define the GPIO pins for  S2, S3, and OUT
-
-S2 = 24
-S3 = 25
-OUT = 23
-
-# Set up GPIO mode and configure pins
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(S2, GPIO.OUT)
-GPIO.setup(S3, GPIO.OUT)
-GPIO.setup(OUT, GPIO.IN)
-
-# Configure scaling (adjust as needed)
-# GPIO.output(S0, GPIO.LOW)
-# GPIO.output(S1, GPIO.HIGH)
-
-blue_count = 0
-
-def read_color():
-    # Set S2 and S3 to select the color sensitivity (adjust as needed)
-    GPIO.output(S2, GPIO.LOW)
-    GPIO.output(S3, GPIO.LOW)
-    
-    # Wait for stabilization (adjust as needed)
-    time.sleep(0.1)
-    
-    # Read the frequency
-    frequency = 0
-    for _ in range(5):  # Read 5 times and average
-        frequency += GPIO.input(OUT)
-        time.sleep(0.1)
-    frequency /= 5.0
-    
-    # Determine the color based on the frequency (calibration may be required)
-    if 22 < frequency < 30:  # Adjust these values for your specific setup
-        return "Red"
-    elif 31 < frequency < 40:
-        return "Green"
-    elif 41 < frequency < 50:
-        return "Blue"
-    else:
-        return "Unknown"
-
-try:
-    while True:
-        color = read_color()
-        if color == "Blue":
-            blue_count += 1
-            print("Blue detected! Count:", blue_count)
-            if blue_count==12:
-                break
-        time.sleep(1)
-
-except KeyboardInterrupt:
-    pass
-
-# Cleanup GPIO
-GPIO.cleanup()
-
-
 
 
 # Avoid obstacles
@@ -230,6 +114,116 @@ def run_distance():
 
 if __name__ == "__main__":
     DISTANCE_THRESHOLD = 20 
+
+
+# camera code to avoid colored cube 
+# Create a VideoCapture object for the Pi Camera
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+
+    if not ret:
+        break
+
+    # Convert the frame to HSV color space
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # Define the range of green color in HSV
+    lower_green = np.array([40, 40, 40])
+    upper_green = np.array([80, 255, 255])
+
+    # Define the range of red color in HSV
+    lower_red = np.array([0, 100, 100])
+    upper_red = np.array([10, 255, 255])
+
+    # Threshold the frame to get only green and red colors
+    green_mask = cv2.inRange(hsv_frame, lower_green, upper_green)
+    red_mask = cv2.inRange(hsv_frame, lower_red, upper_red)
+
+    # Find contours in the masks
+    green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Check if there are green and red objects
+    if len(green_contours) > 0:
+        turn_left()
+    elif len(red_contours) > 0:
+        turn_rigth
+    else:
+        # Continue moving forward if neither green nor red is detected
+        move_forward()
+
+    # # Display the frame
+    # cv2.imshow("Car Camera", frame)
+
+    # Break the loop if 'q' is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Release the VideoCapture and GPIO
+cap.release()
+cv2.destroyAllWindows()
+GPIO.cleanup()
+    
+
+
+# color sensor to stop after 3 turn
+# Define the GPIO pins for  S2, S3, and OUT
+
+S2 = 24
+S3 = 25
+OUT = 23
+
+# Set up GPIO mode and configure pins
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(S2, GPIO.OUT)
+GPIO.setup(S3, GPIO.OUT)
+GPIO.setup(OUT, GPIO.IN)
+
+blue_count = 0
+
+def read_color():
+    # Set S2 and S3 to select the color sensitivity (adjust as needed)
+    GPIO.output(S2, GPIO.LOW)
+    GPIO.output(S3, GPIO.LOW)
+    
+    # Wait for stabilization (adjust as needed)
+    time.sleep(0.1)
+    
+    # Read the frequency
+    frequency = 0
+    for _ in range(5):  # Read 5 times and average
+        frequency += GPIO.input(OUT)
+        time.sleep(0.1)
+    frequency /= 5.0
+    
+    # Determine the color based on the frequency 
+    if 22 < frequency < 30:  # Adjust these values for your specific setup
+        return "Red"
+    elif 31 < frequency < 40:
+        return "Green"
+    elif 41 < frequency < 50:
+        return "Blue"
+    else:
+        return "Unknown"
+
+try:
+    while True:
+        run_distance()
+        color = read_color()
+        if color == "Blue":
+            blue_count += 1
+            print("Blue detected! Count:", blue_count)
+            if blue_count==12:
+                break
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    pass
+
+# Cleanup GPIO
+GPIO.cleanup()
     
 
 
